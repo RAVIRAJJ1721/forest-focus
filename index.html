@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Forest Focus</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(#dff4ff, #f1edcf);
+      color: #18352a;
+      display: flex;
+      justify-content: center;
+    }
+
+    .app {
+      width: min(430px, 100%);
+      min-height: 100vh;
+      padding: 24px 18px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    .stats {
+      background: rgba(255,255,255,0.7);
+      padding: 8px 12px;
+      border-radius: 15px;
+      font-size: 13px;
+    }
+
+    .scene {
+      height: 520px;
+      border-radius: 28px;
+      overflow: hidden;
+      position: relative;
+
+      background:
+        linear-gradient(
+          #bde7ff 0%,
+          #bde7ff 58%,
+          #b8d58b 58%,
+          #7ca65b 100%
+        );
+
+      box-shadow: 0 15px 40px rgba(24,53,42,0.15);
+    }
+
+    .message {
+      position: absolute;
+      top: 25px;
+      left: 10px;
+      right: 10px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .sun {
+      position: absolute;
+      right: 30px;
+      top: 35px;
+      font-size: 45px;
+    }
+
+    .cloud {
+      position: absolute;
+      font-size: 45px;
+    }
+
+    .cloud1 {
+      left: 25px;
+      top: 60px;
+    }
+
+    .cloud2 {
+      left: 170px;
+      top: 110px;
+      font-size: 32px;
+    }
+
+    .plant {
+      position: absolute;
+      left: 50%;
+      bottom: 19%;
+      transform: translateX(-50%);
+      font-size: 105px;
+      transition: 0.4s;
+    }
+
+    .timer {
+      position: absolute;
+      bottom: 30px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 40px;
+      font-weight: bold;
+      letter-spacing: 2px;
+    }
+
+    .progress-container {
+      margin: 18px 3px 10px;
+    }
+
+    .progress {
+      height: 10px;
+      background: rgba(255,255,255,0.7);
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: #3f7d4f;
+      transition: width 0.2s linear;
+    }
+
+    .progress-text {
+      text-align: center;
+      margin-top: 8px;
+      font-size: 13px;
+    }
+
+    button {
+      width: 100%;
+      border: none;
+      border-radius: 18px;
+      padding: 16px;
+      font-size: 17px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    #start {
+      background: #285f3c;
+      color: white;
+    }
+
+    #giveUp {
+      margin-top: 10px;
+      background: rgba(255,255,255,0.75);
+      color: #7b3d3d;
+    }
+
+    button:disabled {
+      opacity: 0.45;
+    }
+
+    .note {
+      text-align: center;
+      font-size: 12px;
+      opacity: 0.65;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="app">
+
+    <header>
+      <h1>🌲 Forest Focus</h1>
+
+      <div class="stats">
+        Trees: <b id="treeCount">0</b>
+      </div>
+    </header>
+
+    <div class="scene">
+
+      <div class="message" id="message">
+        Ready to grow your first tree?
+      </div>
+
+      <div class="sun">☀️</div>
+
+      <div class="cloud cloud1">☁️</div>
+      <div class="cloud cloud2">☁️</div>
+
+      <div class="plant" id="plant">🌰</div>
+
+      <div class="timer" id="timer">
+        01:00:00
+      </div>
+
+    </div>
+
+    <div class="progress-container">
+
+      <div class="progress">
+        <div
+          class="progress-bar"
+          id="progressBar">
+        </div>
+      </div>
+
+      <div
+        class="progress-text"
+        id="progressText">
+        0% — Seed
+      </div>
+
+    </div>
+
+    <button id="start">
+      🌱 Start Growing
+    </button>
+
+    <button id="giveUp" disabled>
+      Give Up & Reset
+    </button>
+
+    <div class="note">
+      TEST MODE: 1 hour = 60 seconds
+    </div>
+
+  </div>
+
+<script>
+
+  /*
+    IMPORTANT:
+
+    For testing:
+    1 hour = 60 seconds.
+
+    Later we will change this to:
+    1 hour = 3600 seconds.
+  */
+
+  const TEST_DURATION = 60;
+
+  let elapsed = 0;
+  let timerRunning = false;
+  let timerInterval = null;
+
+  let treeCount =
+    Number(localStorage.getItem("treeCount") || 0);
+
+  const timer =
+    document.getElementById("timer");
+
+  const plant =
+    document.getElementById("plant");
+
+  const progressBar =
+    document.getElementById("progressBar");
+
+  const progressText =
+    document.getElementById("progressText");
+
+  const message =
+    document.getElementById("message");
+
+  const startButton =
+    document.getElementById("start");
+
+  const giveUpButton =
+    document.getElementById("giveUp");
+
+  const treeCountElement =
+    document.getElementById("treeCount");
+
+
+  treeCountElement.textContent = treeCount;
+
+
+  function formatTime(seconds) {
+
+    const remaining =
+      Math.max(0, TEST_DURATION - seconds);
+
+    const hours =
+      Math.floor(remaining / 3600);
+
+    const minutes =
+      Math.floor((remaining % 3600) / 60);
+
+    const secs =
+      remaining % 60;
+
+    return (
+      String(hours).padStart(2, "0") +
+      ":" +
+      String(minutes).padStart(2, "0") +
+      ":" +
+      String(secs).padStart(2, "0")
+    );
+  }
+
+
+  function updateScreen() {
+
+    const progress =
+      Math.min(1, elapsed / TEST_DURATION);
+
+    timer.textContent =
+      formatTime(elapsed);
+
+    progressBar.style.width =
+      (progress * 100) + "%";
+
+
+    if (progress === 0) {
+
+      plant.textContent = "🌰";
+
+      progressText.textContent =
+        "0% — Seed";
+
+    }
+
+    else if (progress < 0.25) {
+
+      plant.textContent = "🌱";
+
+      progressText.textContent =
+        Math.floor(progress * 100) +
+        "% — Sprout";
+
+    }
+
+    else if (progress < 0.50) {
+
+      plant.textContent = "🪴";
+
+      progressText.textContent =
+        Math.floor(progress * 100) +
+        "% — Young plant";
+
+    }
+
+    else if (progress < 0.75) {
+
+      plant.textContent = "🌿";
+
+      progressText.textContent =
+        Math.floor(progress * 100) +
+        "% — Growing";
+
+    }
+
+    else if (progress < 1) {
+
+      plant.textContent = "🌳";
+
+      progressText.textContent =
+        Math.floor(progress * 100) +
+        "% — Almost grown";
+
+    }
+
+    else {
+
+      plant.textContent = "🌳✨";
+
+      progressText.textContent =
+        "100% — Full-grown tree";
+    }
+  }
+
+
+  function finishSession() {
+
+    clearInterval(timerInterval);
+
+    timerRunning = false;
+
+    elapsed = TEST_DURATION;
+
+    updateScreen();
+
+    treeCount++;
+
+    localStorage.setItem(
+      "treeCount",
+      treeCount
+    );
+
+    treeCountElement.textContent =
+      treeCount;
+
+    message.textContent =
+      "Your tree has fully grown! 🌳";
+
+    startButton.textContent =
+      "🌱 Grow Another Tree";
+
+    startButton.disabled = false;
+
+    giveUpButton.disabled = true;
+
+    alert(
+      "🎉 Congratulations!\n\n" +
+      "You successfully grew a tree!"
+    );
+  }
+
+
+  function resetSession() {
+
+    clearInterval(timerInterval);
+
+    timerRunning = false;
+
+    elapsed = 0;
+
+    updateScreen();
+
+    message.textContent =
+      "Ready to grow your first tree?";
+
+    startButton.textContent =
+      "🌱 Start Growing";
+
+    startButton.disabled = false;
+
+    giveUpButton.disabled = true;
+  }
+
+
+  startButton.addEventListener(
+    "click",
+    function() {
+
+      if (timerRunning) {
+        return;
+      }
+
+      if (elapsed >= TEST_DURATION) {
+        elapsed = 0;
+      }
+
+      timerRunning = true;
+
+      message.textContent =
+        "Stay focused. Your tree is growing...";
+
+      startButton.textContent =
+        "Growing...";
+
+      startButton.disabled = true;
+
+      giveUpButton.disabled = false;
+
+
+      timerInterval =
+        setInterval(
+          function() {
+
+            elapsed++;
+
+            updateScreen();
+
+            if (elapsed >= TEST_DURATION) {
+
+              finishSession();
+
+            }
+
+          },
+          1000
+        );
+    }
+  );
+
+
+  giveUpButton.addEventListener(
+    "click",
+    function() {
+
+      if (!timerRunning) {
+        return;
+      }
+
+      resetSession();
+
+      alert(
+        "The session was interrupted.\n\n" +
+        "Your seed was lost. 🌰"
+      );
+    }
+  );
+
+
+  updateScreen();
+
+</script>
+
+</body>
+</html>
